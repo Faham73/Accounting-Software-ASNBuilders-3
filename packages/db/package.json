@@ -5,9 +5,9 @@
   "main": "./src/client.ts",
   "types": "./src/client.ts",
   "scripts": {
-    "prisma:generate": "dotenv -e ../../.env -- prisma generate",
+    "prisma:generate": "prisma generate",
     "prisma:migrate": "dotenv -e ../../.env -- prisma migrate dev",
-    "migrate:deploy": "dotenv -e ../../.env -- prisma migrate deploy",
+    "migrate:deploy": "prisma migrate deploy",
     "prisma:migrate:name": "dotenv -e ../../.env -- prisma migrate dev --name",
     "prisma:studio": "dotenv -e ../../.env -- prisma studio",
     "db:seed": "dotenv -e ../../.env -- tsx prisma/seed.ts",
