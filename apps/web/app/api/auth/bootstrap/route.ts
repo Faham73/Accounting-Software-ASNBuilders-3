@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import bcrypt from 'bcrypt';
+import type { Prisma } from '@prisma/client';
 import { prisma, UserRole } from '@accounting/db';
 
 const bootstrapSchema = z.object({
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
 
     const passwordHash = await bcrypt.hash(validated.password, 10);
 
-    const [company, user] = await prisma.$transaction(async (tx) => {
+    const [company, user] = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const company = await tx.company.create({
         data: {
           name: validated.companyName,
