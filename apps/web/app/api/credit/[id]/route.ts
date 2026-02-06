@@ -9,7 +9,7 @@ import { prisma } from '@accounting/db';
 import { CreditUpdateSchema } from '@accounting/shared';
 import { ZodError } from 'zod';
 import { createAuditLog } from '@/lib/audit';
-import { Prisma } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 
 /**
  * PUT /api/credit/[id]
@@ -114,7 +114,7 @@ export async function PUT(
     if (validatedData.paymentMethod !== undefined) updateData.paymentMethod = validatedData.paymentMethod;
     if (validatedData.paymentRef !== undefined) updateData.paymentRef = validatedData.paymentRef || null;
     if (validatedData.paymentAccountId !== undefined) updateData.paymentAccountId = validatedData.paymentAccountId || null;
-    if (validatedData.amount !== undefined) updateData.amount = new Prisma.Decimal(validatedData.amount);
+    if (validatedData.amount !== undefined) updateData.amount = new Decimal(validatedData.amount);
     if (validatedData.note !== undefined) updateData.note = validatedData.note || 'Done';
 
     // Update credit
