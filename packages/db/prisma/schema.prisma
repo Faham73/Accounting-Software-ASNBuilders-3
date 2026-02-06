@@ -1,0 +1,950 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  ACCOUNTANT
+  ENGINEER
+  DATA_ENTRY
+  VIEWER
+}
+
+enum InviteTokenPurpose {
+  INVITE
+  RESET_PASSWORD
+}
+
+enum ProjectStatus {
+  DRAFT
+  PLANNING
+  RUNNING
+  ON_HOLD
+  COMPLETED
+  CLOSED
+}
+
+enum PaymentMethodType {
+  CASH
+  BANK
+  CHEQUE
+  MOBILE
+}
+
+enum VoucherType {
+  RECEIPT
+  PAYMENT
+  JOURNAL
+  CONTRA
+}
+
+enum ExpenseType {
+  PROJECT_EXPENSE
+  OFFICE_EXPENSE
+}
+
+enum OverheadAllocationMethod {
+  PERCENT
+  CONTRACT_VALUE
+}
+
+enum VoucherStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  POSTED
+  REVERSED
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  INCOME
+  EXPENSE
+  EQUITY
+}
+
+enum ProjectCostCategory {
+  CIVIL
+  MATERIALS
+  MATI_KATA
+  DHALAI
+  BROKERAGE
+  OTHERS
+}
+
+enum ExpenseSource {
+  WAREHOUSE
+  LABOR
+}
+
+enum ProjectLaborType {
+  DAY
+  MONTHLY
+  CONTRACT
+}
+
+enum StockMovementType {
+  IN
+  OUT
+  ADJUST
+}
+
+enum StockMovementKind {
+  OPENING
+  RECEIVE
+  ISSUE
+  TRANSFER_IN
+  TRANSFER_OUT
+  RETURN_IN
+  WASTAGE
+  ADJUSTMENT
+}
+
+enum PurchaseStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  POSTED
+  REVERSED
+}
+
+
+enum PurchaseLineType {
+  MATERIAL
+  SERVICE
+  OTHER
+}
+
+enum PurchasePaymentMethod {
+  CASH
+  BANK
+}
+
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users           User[]
+  projects        Project[]
+  vendors         Vendor[]
+  paymentMethods           PaymentMethod[]
+  attachments              Attachment[]
+  accounts                 Account[]
+  vouchers                 Voucher[]
+  voucherLines             VoucherLine[]
+  auditLogs                AuditLog[]
+  overheadAllocationRules  OverheadAllocationRule[]
+  overheadAllocationResults OverheadAllocationResult[]
+  projectFiles             ProjectFile[]
+  purchases                Purchase[]
+  inventoryTxns           InventoryTxn[]
+  expenses                 Expense[]
+  expenseCategories        ExpenseCategory[]
+  stockItems               StockItem[]
+  stockBalances            StockBalance[]
+  stockMovements           StockMovement[]
+  projectStockSettings     ProjectStockSetting[]
+  projectInvestments       ProjectInvestment[]
+  projectLabors            ProjectLabor[]
+  credits                  Credit[]
+  projectDocuments         ProjectDocument[]
+  inviteTokens             InviteToken[]
+
+  @@map("companies")
+}
+
+model User {
+  id               String    @id @default(cuid())
+  email            String    @unique
+  name             String
+  passwordHash     String    @map("password_hash")
+  role             UserRole
+  companyId        String    @map("company_id")
+  isActive         Boolean   @default(true) @map("is_active")
+  failedLoginCount Int       @default(0) @map("failed_login_count")
+  lockedUntil      DateTime? @map("locked_until")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  company            Company       @relation(fields: [companyId], references: [id])
+  uploadedAttachments Attachment[]
+  createdVouchers    Voucher[]     @relation("VoucherCreator")
+  submittedVouchers  Voucher[]     @relation("VoucherSubmitter")
+  approvedVouchers   Voucher[]     @relation("VoucherApprover")
+  postedVouchers     Voucher[]     @relation("VoucherPoster")
+  reversedVouchers   Voucher[]     @relation("VoucherReverser")
+  auditLogs          AuditLog[]
+  createdAllocationRules OverheadAllocationRule[] @relation("AllocationRuleCreator")
+  expensesPaidBy Expense[]
+  stockMovementsCreated StockMovement[] @relation("StockMovementCreator")
+  stockMovementsApproved StockMovement[] @relation("StockMovementApprover")
+  projectInvestmentsCreated ProjectInvestment[] @relation("ProjectInvestmentCreator")
+  projectLaborsCreated ProjectLabor[] @relation("ProjectLaborCreator")
+  inviteTokens               InviteToken[]
+
+  @@index([companyId])
+  @@map("users")
+}
+
+model InviteToken {
+  id         String             @id @default(cuid())
+  tokenHash  String             @map("token_hash")
+  userId     String             @map("user_id")
+  companyId  String             @map("company_id")
+  purpose    InviteTokenPurpose
+  expiresAt  DateTime           @map("expires_at")
+  usedAt     DateTime?          @map("used_at")
+  createdAt  DateTime           @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([tokenHash])
+  @@index([tokenHash])
+  @@index([userId])
+  @@index([companyId])
+  @@index([expiresAt, usedAt])
+  @@map("invite_tokens")
+}
+
+model Project {
+  id              String        @id @default(cuid())
+  companyId       String        @map("company_id")
+  name            String
+  clientName      String?       @map("client_name")
+  clientContact   String?       @map("client_contact")
+  siteLocation    String?       @map("site_location")
+  startDate       DateTime?     @map("start_date")
+  expectedEndDate DateTime?     @map("expected_end_date")
+  contractValue   Decimal?      @map("contract_value") @db.Decimal(15, 2)
+  status          ProjectStatus @default(DRAFT)
+  assignedManager String?       @map("assigned_manager")
+  isActive        Boolean       @default(true) @map("is_active")
+  // New fields
+  address         String?       @map("address")
+  projectManager  String?       @map("project_manager")
+  projectEngineer String?       @map("project_engineer")
+  companySiteName String?       @map("company_site_name")
+  reference       String?       @map("reference")
+  isMain          Boolean       @default(false) @map("is_main")
+  parentProjectId String?       @map("parent_project_id")
+  totalFloors     Int?          @map("total_floors")
+  totalUnits      Int?          @map("total_units")
+  budgetTotal     Decimal?      @map("budget_total") @db.Decimal(15, 2)
+  progressPercent Int          @default(0) @map("progress_percent")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  company         Company       @relation(fields: [companyId], references: [id])
+  vouchers        Voucher[]
+  voucherLines    VoucherLine[]
+  overheadAllocations OverheadAllocationResult[]
+  files           ProjectFile[]
+  parentProject   Project?      @relation("ProjectHierarchy", fields: [parentProjectId], references: [id])
+  subProjects     Project[]     @relation("ProjectHierarchy")
+  mainPurchases   Purchase[]    @relation("PurchaseMainProject")
+  subPurchases    Purchase[]    @relation("PurchaseSubProject")
+  inventoryTxns   InventoryTxn[]
+  expenses        Expense[]
+  mainProjectExpenses Expense[] @relation("MainProjectForExpense")
+  stockMovements  StockMovement[] @relation("ProjectStockMovements")
+  sourceStockMovements StockMovement[] @relation("SourceProjectStockMovements")
+  destinationStockMovements StockMovement[] @relation("DestinationProjectStockMovements")
+  stockSettings   ProjectStockSetting[]
+  investments     ProjectInvestment[]
+  labors          ProjectLabor[]
+  credits         Credit[]
+  documents       ProjectDocument[]
+
+  @@index([companyId])
+  @@index([parentProjectId])
+  @@index([companyId, parentProjectId])
+  @@map("projects")
+}
+
+model Vendor {
+  id        String   @id @default(cuid())
+  companyId String   @map("company_id")
+  name      String
+  phone     String?
+  address   String?
+  notes     String?
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  company      Company      @relation(fields: [companyId], references: [id])
+  voucherLines VoucherLine[]
+  purchases    Purchase[]
+  expenses     Expense[]
+  stockMovements StockMovement[]
+
+  @@index([companyId])
+  @@map("vendors")
+}
+
+
+model PaymentMethod {
+  id        String            @id @default(cuid())
+  companyId String            @map("company_id")
+  name      String
+  type      PaymentMethodType
+  isActive  Boolean           @default(true) @map("is_active")
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+
+  company       Company       @relation(fields: [companyId], references: [id])
+  voucherLines  VoucherLine[]
+  expenses      Expense[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
+  @@map("payment_methods")
+}
+
+model Attachment {
+  id              String   @id @default(cuid())
+  companyId       String   @map("company_id")
+  uploadedByUserId String  @map("uploaded_by_user_id")
+  url             String
+  fileName        String   @map("file_name")
+  mimeType        String   @map("mime_type")
+  sizeBytes       Int      @map("size_bytes")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  company    Company @relation(fields: [companyId], references: [id])
+  uploadedBy User    @relation(fields: [uploadedByUserId], references: [id])
+
+  @@index([companyId])
+  @@index([uploadedByUserId])
+  @@map("attachments")
+}
+
+model Account {
+  id                 String           @id @default(cuid())
+  companyId          String           @map("company_id")
+  code               String
+  name               String
+  type               AccountType
+  parentId           String?          @map("parent_id")
+  expenseCategoryId  String?          @map("expense_category_id")
+  isActive           Boolean          @default(true) @map("is_active")
+  isSystem           Boolean          @default(true) @map("is_system")
+  locked             Boolean          @default(true)
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+
+  company           Company       @relation(fields: [companyId], references: [id])
+  parent            Account?     @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children          Account[]    @relation("AccountHierarchy")
+  expenseCategory   ExpenseCategory? @relation(fields: [expenseCategoryId], references: [id])
+  voucherLines     VoucherLine[]
+  purchasePayments  Purchase[] @relation("PurchasePaymentAccount")
+  expenseDebitAccounts Expense[] @relation("ExpenseDebitAccount")
+  expenseCreditAccounts Expense[] @relation("ExpenseCreditAccount")
+  creditPayments   Credit[] @relation("CreditPaymentAccount")
+
+  @@unique([companyId, code])
+  @@unique([companyId, name])
+  @@index([companyId])
+  @@index([parentId])
+  @@index([expenseCategoryId])
+  @@map("accounts")
+}
+
+model Voucher {
+  id              String        @id @default(cuid())
+  companyId       String        @map("company_id")
+  projectId       String?       @map("project_id")
+  voucherNo       String        @map("voucher_no")
+  type            VoucherType?  @default(JOURNAL)
+  expenseType     ExpenseType?  @map("expense_type")
+  date            DateTime
+  status          VoucherStatus @default(DRAFT)
+  narration       String?
+  createdByUserId String        @map("created_by_user_id")
+  
+  // Workflow fields
+  submittedAt     DateTime?     @map("submitted_at")
+  submittedById   String?       @map("submitted_by_id")
+  approvedAt      DateTime?     @map("approved_at")
+  approvedById    String?       @map("approved_by_id")
+  postedByUserId  String?       @map("posted_by_user_id")
+  postedAt        DateTime?     @map("posted_at")
+  
+  // Reversal fields
+  reversalOfId    String?       @map("reversal_of_id")
+  reversedById    String?       @map("reversed_by_id")
+  reversedAt      DateTime?     @map("reversed_at")
+  
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  company         Company            @relation(fields: [companyId], references: [id])
+  project         Project?           @relation(fields: [projectId], references: [id])
+  createdBy       User               @relation("VoucherCreator", fields: [createdByUserId], references: [id])
+  submittedBy     User?              @relation("VoucherSubmitter", fields: [submittedById], references: [id])
+  approvedBy      User?              @relation("VoucherApprover", fields: [approvedById], references: [id])
+  postedBy        User?              @relation("VoucherPoster", fields: [postedByUserId], references: [id])
+  reversedBy      User?              @relation("VoucherReverser", fields: [reversedById], references: [id])
+  originalVoucher Voucher?          @relation("VoucherReversal", fields: [reversalOfId], references: [id])
+  reversalVouchers Voucher[]         @relation("VoucherReversal")
+  purchase        Purchase?          @relation("PurchaseVoucher")
+  expense         Expense?           @relation("ExpenseVoucher")
+  investment      ProjectInvestment? @relation("InvestmentVoucher")
+  lines           VoucherLine[]
+  allocations     VendorAllocation[] @relation("PaymentVoucher")
+
+  @@unique([companyId, voucherNo])
+  @@index([companyId, date])
+  @@index([companyId, status])
+  @@index([companyId, type])
+  @@index([companyId, expenseType])
+  @@index([reversalOfId])
+  @@index([companyId, status, date])
+  @@map("vouchers")
+}
+
+model VoucherLine {
+  id             String   @id @default(cuid())
+  voucherId      String   @map("voucher_id")
+  companyId      String   @map("company_id")
+  accountId      String   @map("account_id")
+  description    String?
+  debit          Decimal  @default(0) @db.Decimal(18, 2)
+  credit         Decimal  @default(0) @db.Decimal(18, 2)
+  projectId      String?  @map("project_id")
+  isCompanyLevel Boolean  @default(false) @map("is_company_level")
+  vendorId       String?  @map("vendor_id")
+  paymentMethodId String? @map("payment_method_id")
+  // PDF fields
+  workDetails    String?  @map("work_details")
+  paidBy         String?  @map("paid_by")
+  receivedBy     String?  @map("received_by")
+  fileRef        String?  @map("file_ref")
+  voucherRef     String?  @map("voucher_ref")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  voucher          Voucher            @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  company          Company            @relation(fields: [companyId], references: [id])
+  account          Account            @relation(fields: [accountId], references: [id])
+  project          Project?           @relation(fields: [projectId], references: [id])
+  vendor           Vendor?            @relation(fields: [vendorId], references: [id])
+  paymentMethod    PaymentMethod?     @relation(fields: [paymentMethodId], references: [id])
+  sourceAllocations VendorAllocation[] @relation("SourceLine")
+
+  @@index([voucherId])
+  @@index([companyId])
+  @@index([accountId])
+  @@index([vendorId])
+  @@index([companyId, projectId])
+  @@index([companyId, projectId, voucherId])
+  @@index([companyId, vendorId])
+  @@index([companyId, isCompanyLevel])
+  @@map("voucher_lines")
+}
+
+
+model VendorAllocation {
+  id               String   @id @default(cuid())
+  paymentVoucherId String   @map("payment_voucher_id")
+  sourceLineId     String   @map("source_line_id")
+  amount           Decimal  @db.Decimal(18, 2)
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  paymentVoucher Voucher     @relation("PaymentVoucher", fields: [paymentVoucherId], references: [id], onDelete: Cascade)
+  sourceLine     VoucherLine @relation("SourceLine", fields: [sourceLineId], references: [id], onDelete: Cascade)
+
+  @@index([paymentVoucherId])
+  @@index([sourceLineId])
+  @@map("vendor_allocations")
+}
+
+model AuditLog {
+  id          String    @id @default(cuid())
+  companyId   String?   @map("company_id")
+  entityType  String?   @map("entity_type")
+  entityId    String?   @map("entity_id")
+  action      String
+  actorUserId String?   @map("actor_user_id")
+  metadata    Json?     @map("metadata")
+  before      Json?
+  after       Json?
+  diffJson    Json?     @map("diff_json")
+  metaJson    Json?     @map("meta_json")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  company Company? @relation(fields: [companyId], references: [id])
+  actor   User?    @relation(fields: [actorUserId], references: [id])
+
+  @@index([companyId, entityType, entityId])
+  @@index([actorUserId])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}
+
+model RateLimitAttempt {
+  id        String   @id @default(cuid())
+  identifier String  // IP address or email
+  endpoint  String   // 'login', 'create-user', 'reset-password'
+  attemptAt DateTime @default(now()) @map("attempt_at")
+
+  @@index([identifier, endpoint, attemptAt])
+  @@index([attemptAt])
+  @@map("rate_limit_attempts")
+}
+
+model OverheadAllocationRule {
+  id          String                    @id @default(cuid())
+  companyId   String                    @map("company_id")
+  month       DateTime                  @db.Date
+  method      OverheadAllocationMethod
+  allocations Json?                     // For PERCENT method: { projectId: percent }
+  createdById String                    @map("created_by_id")
+  createdAt   DateTime                  @default(now()) @map("created_at")
+  updatedAt   DateTime                  @updatedAt @map("updated_at")
+
+  company    Company                    @relation(fields: [companyId], references: [id])
+  createdBy  User                       @relation("AllocationRuleCreator", fields: [createdById], references: [id])
+  results    OverheadAllocationResult[]
+
+  @@unique([companyId, month])
+  @@index([companyId, month])
+  @@map("overhead_allocation_rules")
+}
+
+model OverheadAllocationResult {
+  id          String   @id @default(cuid())
+  ruleId      String   @map("rule_id")
+  companyId   String   @map("company_id")
+  projectId   String   @map("project_id")
+  amount      Decimal  @db.Decimal(18, 2)
+  method      OverheadAllocationMethod
+  sourceOverheadTotal Decimal @map("source_overhead_total") @db.Decimal(18, 2)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  rule    OverheadAllocationRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  company Company                @relation(fields: [companyId], references: [id])
+  project Project                @relation(fields: [projectId], references: [id])
+
+  @@index([ruleId])
+  @@index([companyId, projectId])
+  @@index([companyId, projectId, createdAt])
+  @@map("overhead_allocation_results")
+}
+
+model ProjectFile {
+  id        String   @id @default(cuid())
+  companyId String   @map("company_id")
+  projectId String   @map("project_id")
+  filename  String
+  url       String
+  mimeType  String   @map("mime_type")
+  size      Int
+  createdAt DateTime @default(now()) @map("created_at")
+
+  company Company @relation(fields: [companyId], references: [id])
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([projectId])
+  @@index([companyId, projectId])
+  @@map("project_files")
+}
+
+model ProjectDocument {
+  id         String   @id @default(cuid())
+  companyId  String   @map("company_id")
+  projectId  String   @map("project_id")
+  title      String
+  fileUrl    String   @map("file_url")
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+
+  company Company @relation(fields: [companyId], references: [id])
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([projectId])
+  @@index([companyId, projectId])
+  @@map("project_documents")
+}
+
+model Purchase {
+  id              String        @id @default(cuid())
+  companyId       String        @map("company_id")
+  date            DateTime
+  challanNo       String?       @map("challan_no")
+  projectId       String        @map("project_id")
+  subProjectId    String?       @map("sub_project_id")
+  supplierVendorId String       @map("supplier_vendor_id")
+  reference       String?
+  discountPercent Decimal?      @map("discount_percent") @db.Decimal(5, 2)
+  subtotal        Decimal       @db.Decimal(18, 2)
+  total           Decimal       @db.Decimal(18, 2)
+  paidAmount      Decimal       @default(0) @map("paid_amount") @db.Decimal(18, 2)
+  dueAmount       Decimal       @default(0) @map("due_amount") @db.Decimal(18, 2)
+  paymentMethod   PurchasePaymentMethod? @map("payment_method")
+  paymentAccountId String?      @map("payment_account_id")
+  voucherId       String?       @unique @map("voucher_id")
+  status          PurchaseStatus @default(DRAFT)
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  company         Company       @relation(fields: [companyId], references: [id])
+  project         Project       @relation("PurchaseMainProject", fields: [projectId], references: [id])
+  subProject      Project?      @relation("PurchaseSubProject", fields: [subProjectId], references: [id])
+  supplierVendor  Vendor        @relation(fields: [supplierVendorId], references: [id])
+  paymentAccount  Account?      @relation("PurchasePaymentAccount", fields: [paymentAccountId], references: [id])
+  voucher         Voucher?      @relation("PurchaseVoucher", fields: [voucherId], references: [id])
+  lines           PurchaseLine[]
+  attachments     PurchaseAttachment[]
+  inventoryTxns   InventoryTxn[]
+
+  @@index([companyId])
+  @@index([companyId, date])
+  @@index([challanNo])
+  @@index([companyId, projectId])
+  @@index([companyId, supplierVendorId])
+  @@index([voucherId])
+  @@index([companyId, status])
+  @@map("purchases")
+}
+
+model PurchaseLine {
+  id             String           @id @default(cuid())
+  purchaseId     String           @map("purchase_id")
+  stockItemId    String?          @map("stock_item_id")
+  lineType       PurchaseLineType  @default(OTHER)
+  quantity       Decimal?         @db.Decimal(18, 3)
+  unit           String?
+  unitRate       Decimal?         @map("unit_rate") @db.Decimal(18, 2)
+  description    String?
+  materialName   String?          @map("material_name")
+  lineTotal      Decimal          @map("line_total") @db.Decimal(18, 2)
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  purchase   Purchase   @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  stockItem  StockItem? @relation(fields: [stockItemId], references: [id])
+
+  @@index([purchaseId])
+  @@index([stockItemId])
+  @@index([purchaseId, lineType])
+  @@map("purchase_lines")
+}
+
+model PurchaseAttachment {
+  id         String   @id @default(cuid())
+  purchaseId String   @map("purchase_id")
+  fileName   String   @map("file_name")
+  fileUrl    String   @map("file_url")
+  mimeType   String   @map("mime_type")
+  sizeBytes  Int      @map("size_bytes")
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+
+  purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+
+  @@index([purchaseId])
+  @@map("purchase_attachments")
+}
+
+model InventoryTxn {
+  id         String   @id @default(cuid())
+  companyId String   @map("company_id")
+  stockItemId String?  @map("stock_item_id")
+  purchaseId String? @map("purchase_id")
+  projectId  String? @map("project_id")
+  qtyIn      Decimal  @default(0) @map("qty_in") @db.Decimal(18, 3)
+  qtyOut     Decimal  @default(0) @map("qty_out") @db.Decimal(18, 3)
+  unitCost   Decimal  @map("unit_cost") @db.Decimal(18, 2)
+  totalCost  Decimal  @map("total_cost") @db.Decimal(18, 2)
+  txnDate    DateTime @map("txn_date")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  company   Company   @relation(fields: [companyId], references: [id])
+  stockItem StockItem? @relation(fields: [stockItemId], references: [id])
+  purchase  Purchase? @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
+  project   Project?  @relation(fields: [projectId], references: [id])
+
+  @@index([companyId])
+  @@index([companyId, stockItemId])
+  @@index([companyId, purchaseId])
+  @@index([companyId, projectId])
+  @@index([txnDate])
+  @@map("inventory_txns")
+}
+
+model ExpenseCategory {
+  id        String   @id @default(cuid())
+  companyId String   @map("company_id")
+  company   Company  @relation(fields: [companyId], references: [id])
+  name      String
+  code      String?
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  expenses Expense[]
+  accounts Account[]
+
+  @@unique([companyId, name])
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@map("expense_categories")
+}
+
+model Expense {
+  id              String         @id @default(cuid())
+  companyId       String         @map("company_id")
+  company         Company        @relation(fields: [companyId], references: [id])
+  projectId       String         @map("project_id")
+  project         Project        @relation(fields: [projectId], references: [id])
+  mainProjectId   String         @map("main_project_id")
+  mainProject     Project        @relation("MainProjectForExpense", fields: [mainProjectId], references: [id])
+  date            DateTime
+  categoryId      String         @map("category_id")
+  category        ExpenseCategory @relation(fields: [categoryId], references: [id])
+  source          ExpenseSource
+  amount          Decimal        @db.Decimal(14, 2)
+  paidByUserId    String         @map("paid_by_user_id")
+  paidByUser      User           @relation(fields: [paidByUserId], references: [id])
+  paidTo          String?        @map("paid_to")
+  vendorId        String?        @map("vendor_id")
+  vendor          Vendor?        @relation(fields: [vendorId], references: [id])
+  paymentMethodId String         @map("payment_method_id")
+  paymentMethod   PaymentMethod  @relation(fields: [paymentMethodId], references: [id])
+  debitAccountId  String         @map("debit_account_id")
+  debitAccount    Account        @relation("ExpenseDebitAccount", fields: [debitAccountId], references: [id])
+  creditAccountId String         @map("credit_account_id")
+  creditAccount   Account        @relation("ExpenseCreditAccount", fields: [creditAccountId], references: [id])
+  voucherId            String         @unique @map("voucher_id")
+  voucher              Voucher        @relation("ExpenseVoucher", fields: [voucherId], references: [id])
+  categoryNameSnapshot String?        @map("category_name_snapshot")
+  notes                String?
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @updatedAt @map("updated_at")
+
+  @@index([companyId, mainProjectId, date])
+  @@index([companyId, projectId, date])
+  @@index([companyId, categoryId, date])
+  @@index([companyId, mainProjectId])
+  @@index([projectId, categoryId, date])
+  @@index([debitAccountId])
+  @@map("expenses")
+}
+
+model StockItem {
+  id           String   @id @default(cuid())
+  companyId    String   @map("company_id")
+  name         String
+  sku          String?  @map("sku")
+  unit         String
+  category     String?
+  reorderLevel Decimal? @map("reorder_level") @db.Decimal(18, 3)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  company       Company        @relation(fields: [companyId], references: [id])
+  balances      StockBalance[]
+  movements     StockMovement[]
+  purchaseLines PurchaseLine[]
+  inventoryTxns InventoryTxn[]
+  projectStockSettings ProjectStockSetting[]
+
+  @@unique([companyId, name])
+  @@unique([companyId, sku])
+  @@index([companyId])
+  @@index([companyId, name])
+  @@map("stock_items")
+}
+
+model StockBalance {
+  id          String   @id @default(cuid())
+  companyId   String   @map("company_id")
+  stockItemId String   @map("stock_item_id")
+  onHandQty   Decimal  @default(0) @map("on_hand_qty") @db.Decimal(18, 3)
+  avgCost     Decimal  @default(0) @map("avg_cost") @db.Decimal(18, 2)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  company   Company   @relation(fields: [companyId], references: [id])
+  stockItem StockItem  @relation(fields: [stockItemId], references: [id])
+
+  @@unique([companyId, stockItemId])
+  @@index([companyId])
+  @@index([companyId, stockItemId])
+  @@index([stockItemId])
+  @@map("stock_balances")
+}
+
+model StockMovement {
+  id                String            @id @default(cuid())
+  companyId         String            @map("company_id")
+  stockItemId       String            @map("stock_item_id")
+  movementDate      DateTime          @default(now()) @map("movement_date")
+  type              StockMovementType
+  movementKind      StockMovementKind? @map("movement_kind")
+  qty               Decimal           @db.Decimal(18, 3)
+  unitCost          Decimal?          @map("unit_cost") @db.Decimal(18, 2)
+  referenceType     String?           @map("reference_type")
+  referenceId       String?           @map("reference_id")
+  notes             String?
+  projectId         String?           @map("project_id")
+  sourceProjectId  String?           @map("source_project_id")
+  destinationProjectId String?        @map("destination_project_id")
+  vendorId          String?           @map("vendor_id")
+  createdById       String            @map("created_by_id")
+  approvedById      String?           @map("approved_by_id")
+  approvedAt        DateTime?         @map("approved_at")
+  reason            String?
+  meta              Json?
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+
+  company         Company   @relation(fields: [companyId], references: [id])
+  stockItem       StockItem @relation(fields: [stockItemId], references: [id])
+  project         Project?  @relation("ProjectStockMovements", fields: [projectId], references: [id])
+  sourceProject   Project?  @relation("SourceProjectStockMovements", fields: [sourceProjectId], references: [id])
+  destinationProject Project? @relation("DestinationProjectStockMovements", fields: [destinationProjectId], references: [id])
+  vendor          Vendor?   @relation(fields: [vendorId], references: [id])
+  createdBy       User      @relation("StockMovementCreator", fields: [createdById], references: [id])
+  approvedBy      User?     @relation("StockMovementApprover", fields: [approvedById], references: [id])
+
+  @@index([companyId])
+  @@index([companyId, stockItemId])
+  @@index([companyId, stockItemId, movementDate])
+  @@index([companyId, movementDate])
+  @@index([stockItemId])
+  @@index([projectId])
+  @@index([sourceProjectId])
+  @@index([destinationProjectId])
+  @@index([referenceType, referenceId])
+  @@index([companyId, projectId])
+  @@index([companyId, projectId, movementKind])
+  @@map("stock_movements")
+}
+
+model ProjectInvestment {
+  id        String   @id @default(cuid())
+  companyId String   @map("company_id")
+  projectId String   @map("project_id")
+  date      DateTime
+  amount    Decimal  @db.Decimal(18, 2)
+  note      String?
+
+  // NEW (Funding fields)
+  investorName String? @map("investor_name")
+  receivedBy   String? @map("received_by")
+  paymentMethod PaymentMethodType? @map("payment_method")
+  voucherId    String? @unique @map("voucher_id")
+
+  createdByUserId String @map("created_by_user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  company   Company @relation(fields: [companyId], references: [id])
+  project   Project @relation(fields: [projectId], references: [id])
+  createdBy User    @relation("ProjectInvestmentCreator", fields: [createdByUserId], references: [id])
+  voucher   Voucher? @relation("InvestmentVoucher", fields: [voucherId], references: [id])
+
+  @@index([companyId])
+  @@index([companyId, projectId])
+  @@index([companyId, projectId, date])
+  @@index([projectId])
+  @@index([voucherId])
+  @@map("project_investments")
+}
+
+model ProjectLabor {
+  id        String   @id @default(cuid())
+  companyId String   @map("company_id")
+  projectId String   @map("project_id")
+  type      ProjectLaborType @default(DAY)
+  date      DateTime
+  amount    Decimal  @db.Decimal(18, 2)
+  note      String?
+  workerName   String? @map("worker_name")
+  employeeName String? @map("employee_name")
+  month        Int?    // 1-12, for MONTHLY
+  year         Int?
+  teamLeader   String?  @map("team_leader")   // DAY labor
+  paid         Decimal? @db.Decimal(18, 2)   // DAY labor
+  due          Decimal? @db.Decimal(18, 2)   // DAY labor: amount - paid (>= 0)
+  rating       Int?     // 1-5, DAY labor
+  createdByUserId String @map("created_by_user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  company   Company @relation(fields: [companyId], references: [id])
+  project   Project @relation(fields: [projectId], references: [id])
+  createdBy User    @relation("ProjectLaborCreator", fields: [createdByUserId], references: [id])
+
+  @@index([companyId])
+  @@index([companyId, projectId])
+  @@index([companyId, projectId, date])
+  @@index([companyId, projectId, type, date])
+  @@index([projectId])
+  @@map("project_labors")
+}
+
+model ProjectStockSetting {
+  id          String   @id @default(cuid())
+  companyId   String   @map("company_id")
+  projectId   String   @map("project_id")
+  stockItemId String   @map("stock_item_id")
+  minQty      Decimal  @map("min_qty") @db.Decimal(18, 3)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  company   Company   @relation(fields: [companyId], references: [id])
+  project   Project   @relation(fields: [projectId], references: [id])
+  stockItem StockItem @relation(fields: [stockItemId], references: [id])
+
+  @@unique([projectId, stockItemId])
+  @@index([companyId])
+  @@index([companyId, projectId])
+  @@index([projectId])
+  @@map("project_stock_settings")
+}
+
+model Credit {
+  id                String   @id @default(cuid())
+  companyId         String   @map("company_id")
+  projectId         String?  @map("project_id")
+  projectSnapshotName String @map("project_snapshot_name")
+  date              DateTime
+  purpose           String
+  paidBy            String
+  receivedBy        String
+  paymentMethod     String   @map("payment_method")
+  paymentRef        String?  @map("payment_ref")
+  paymentAccountId  String?  @map("payment_account_id")
+  amount            Decimal  @db.Decimal(18, 2)
+  note              String?  @default("Done")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  company         Company  @relation(fields: [companyId], references: [id])
+  project         Project? @relation(fields: [projectId], references: [id])
+  paymentAccount  Account? @relation("CreditPaymentAccount", fields: [paymentAccountId], references: [id])
+
+  @@index([companyId])
+  @@index([companyId, projectId])
+  @@index([companyId, date])
+  @@index([projectId])
+  @@map("credits")
+}

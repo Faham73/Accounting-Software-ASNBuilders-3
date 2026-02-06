@@ -1,0 +1,33 @@
+{
+  "name": "accounting-software-2",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=apps/web",
+    "build": "npm run build --workspace=apps/web",
+    "start": "npm run start --workspace=apps/web",
+    "lint": "npm run lint --workspace=apps/web",
+    "db:generate": "npm run prisma:generate --workspace=packages/db",
+    "db:migrate": "npm run prisma:migrate --workspace=packages/db",
+    "db:deploy": "npm run migrate:deploy --workspace=packages/db",
+    "db:migrate:name": "npm run prisma:migrate:name --workspace=packages/db --",
+    "db:seed": "npm run db:seed --workspace=packages/db",
+    "prisma:studio": "npm run prisma:studio --workspace=packages/db",
+    "db:up": "docker-compose up -d",
+    "db:down": "docker-compose down",
+    "reset:stock": "npm run reset:stock --workspace=packages/db",
+    "migrate:credits": "npm run migrate:credits --workspace=packages/db",
+    "release:lock": "npm run release:lock --workspace=packages/db",
+    "bootstrap:admin": "npm run bootstrap:admin --workspace=packages/db"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "@types/node": "^20.10.6",
+    "@types/react": "^18.2.46",
+    "@types/react-dom": "^18.2.18"
+  }
+}

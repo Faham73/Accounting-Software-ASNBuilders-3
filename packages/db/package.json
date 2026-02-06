@@ -1,0 +1,37 @@
+{
+  "name": "@accounting/db",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/client.ts",
+  "types": "./src/client.ts",
+  "scripts": {
+    "prisma:generate": "dotenv -e ../../.env -- prisma generate",
+    "prisma:migrate": "dotenv -e ../../.env -- prisma migrate dev",
+    "migrate:deploy": "dotenv -e ../../.env -- prisma migrate deploy",
+    "prisma:migrate:name": "dotenv -e ../../.env -- prisma migrate dev --name",
+    "prisma:studio": "dotenv -e ../../.env -- prisma studio",
+    "db:seed": "dotenv -e ../../.env -- tsx prisma/seed.ts",
+    "bootstrap:admin": "dotenv -e ../../.env -- tsx scripts/bootstrap-admin.ts",
+    "reset:stock": "dotenv -e ../../.env -- tsx scripts/resetStockData.ts",
+    "migrate:credits": "dotenv -e ../../.env -- tsx scripts/migrateCreditsToPdfFields.ts",
+    "release:lock": "dotenv -e ../../.env -- tsx scripts/releaseAdvisoryLock.ts",
+    "backfill:voucher-line-project-id": "dotenv -e ../../.env -- tsx scripts/backfillVoucherLineProjectId.ts","backfill:expense-category":"dotenv -e ../../.env -- tsx scripts/backfillExpenseCategorySnapshot.ts",
+    "test:expense-category":"tsx scripts/expenseCategoryImprovements.test.ts"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.7.1"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^9.2.0",
+    "@types/bcrypt": "^5.0.2",
+    "bcrypt": "^5.1.1",
+    "@types/bcryptjs": "^2.4.6",
+    "bcryptjs": "^2.4.3",
+    "dotenv-cli": "^7.4.4",
+    "prisma": "^5.7.1",
+    "tsx": "^4.7.0"
+  }
+}

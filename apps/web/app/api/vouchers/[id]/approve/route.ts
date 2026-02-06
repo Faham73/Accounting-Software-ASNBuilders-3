@@ -1,0 +1,52 @@
+import { NextRequest, NextResponse } from 'next/server';
+import {
+  requirePermission,
+  createErrorResponse,
+  ForbiddenError,
+  UnauthorizedError,
+} from '@/lib/rbac';
+import { approveVoucher } from '@/lib/vouchers/workflow';
+
+/**
+ * POST /api/vouchers/[id]/approve
+ * Approve a submitted voucher (SUBMITTED → APPROVED)
+ */
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const auth = await requirePermission(request, 'vouchers', 'APPROVE');
+
+    const result = await approveVoucher(
+      params.id,
+      auth.userId,
+      auth.companyId,
+      auth.role,
+      request
+    );
+
+    if (!result.success) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: result.error,
+        },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json({
+      ok: true,
+      data: result.voucher,
+    });
+  } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return createErrorResponse(error, 401);
+    }
+    if (error instanceof ForbiddenError) {
+      return createErrorResponse(error, 403);
+    }
+    return createErrorResponse(error instanceof Error ? error : new Error('Unknown error'), 500);
+  }
+}
