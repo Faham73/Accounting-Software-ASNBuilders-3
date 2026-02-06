@@ -13,6 +13,7 @@ interface DebitLine {
   receivedBy: string | null;
   fileRef: string | null;
   voucherRef: string | null;
+  expenseCategoryId: string | null;
   voucher: {
     id: string;
     voucherNo: string;
@@ -31,6 +32,10 @@ interface DebitLine {
     name: string;
   } | null;
   paymentMethod: {
+    id: string;
+    name: string;
+  } | null;
+  expenseCategory: {
     id: string;
     name: string;
   } | null;
@@ -586,6 +591,9 @@ export default function DebitClient() {
                       Purpose
                     </th>
                     <th className="px-2 py-2 sm:px-3 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Category
+                    </th>
+                    <th className="px-2 py-2 sm:px-3 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Cash
                     </th>
                     <th className="px-2 py-2 sm:px-3 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -649,6 +657,9 @@ export default function DebitClient() {
                       </td>
                       <td className="px-2 py-2 sm:px-3 sm:py-3 text-xs sm:text-sm text-gray-500">
                         {line.account.name || '—'}
+                      </td>
+                      <td className="px-2 py-2 sm:px-3 sm:py-3 text-xs sm:text-sm text-gray-500">
+                        {line.expenseCategory?.name || '—'}
                       </td>
                       <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
                         {line.paymentMethod?.name || '—'}

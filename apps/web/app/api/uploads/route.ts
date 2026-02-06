@@ -24,6 +24,18 @@ export async function POST(request: NextRequest) {
       throw new ForbiddenError('You do not have permission to upload files');
     }
 
+    // File uploads to local filesystem are not supported in production (Vercel serverless)
+    // TODO: Implement cloud storage (S3, Vercel Blob, etc.) for production
+    if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: 'File uploads are not available in production. Please configure cloud storage.',
+        },
+        { status: 503 }
+      );
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
 

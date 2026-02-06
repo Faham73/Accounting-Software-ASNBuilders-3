@@ -85,6 +85,12 @@ function nextVoucherNo(ctx: SeedContext, prefix: string): string {
 
 async function seedCompany(name: string): Promise<SeedContext> {
   const company = await getOrCreateCompany(name);
+  
+  // Ensure default expense categories exist for this company
+  // Use dynamic import with absolute path from workspace root
+  const { ensureDefaultExpenseCategories } = await import('../../../apps/web/lib/expenseCategoriesDefaults.server');
+  await ensureDefaultExpenseCategories(company.id);
+  
   const ctx: SeedContext = {
     companyId: company.id,
     userIds: [],
@@ -564,40 +570,15 @@ async function seedCompany(name: string): Promise<SeedContext> {
     });
   }
 
-  // Seed expense categories (construction-oriented, with code and sortOrder)
-  const defaultExpenseCategories: { name: string; code: string | null; sortOrder: number }[] = [
-    { name: 'Land & Legal', code: 'LAND_LEGAL', sortOrder: 10 },
-    { name: 'Design & Approvals', code: 'DESIGN', sortOrder: 20 },
-    { name: 'Construction Material', code: 'MATERIAL', sortOrder: 30 },
-    { name: 'Labor & Workforce', code: 'LABOR', sortOrder: 40 },
-    { name: 'Machinery & Equipment', code: 'MACHINERY', sortOrder: 50 },
-    { name: 'Sub-Contractor', code: 'SUBCONTRACTOR', sortOrder: 60 },
-    { name: 'Utilities & Site Ops', code: 'UTILITIES', sortOrder: 70 },
-    { name: 'Transport & Logistics', code: 'TRANSPORT', sortOrder: 80 },
-    { name: 'Site Admin & Misc', code: 'SITE_ADMIN', sortOrder: 90 },
-    { name: 'Finance & Statutory', code: 'FINANCE', sortOrder: 100 },
-    { name: 'Marketing & Sales', code: 'MARKETING', sortOrder: 110 },
-    { name: 'Head Office', code: 'HEAD_OFFICE', sortOrder: 120 },
-    { name: 'Contingency', code: 'CONTINGENCY', sortOrder: 130 },
-    { name: 'Uncategorized', code: 'UNCAT', sortOrder: 999 },
-  ];
-  for (const cat of defaultExpenseCategories) {
-    const category = await prisma.expenseCategory.upsert({
-      where: {
-        companyId_name: {
-          companyId: company.id,
-          name: cat.name,
-        },
-      },
-      update: { code: cat.code, sortOrder: cat.sortOrder },
-      create: {
-        companyId: company.id,
-        name: cat.name,
-        code: cat.code,
-        sortOrder: cat.sortOrder,
-        isActive: true,
-      },
-    });
+  // Default categories are already created by ensureDefaultExpenseCategories above
+  // Get all categories for this company (including defaults and any custom ones)
+  const allCategories = await prisma.expenseCategory.findMany({
+    where: { companyId: company.id },
+    select: { id: true, name: true },
+  });
+  
+  // Populate context with category IDs
+  for (const category of allCategories) {
     ctx.expenseCategoryIds.push(category.id);
     ctx.expenseCategoryIdToName[category.id] = category.name;
   }

@@ -37,4 +37,6 @@ yarn-error.log*
 next-env.d.ts
 
 # Prisma
-packages/db/prisma/migrations/
+# Note: migrations/ should be committed, not ignored
+# Only ignore generated client files
+packages/db/node_modules/.prisma/

@@ -17,6 +17,12 @@ interface PaymentMethod {
   type: string;
 }
 
+interface ExpenseCategory {
+  id: string;
+  name: string;
+  isActive: boolean;
+}
+
 interface CreateDebitVoucherFormProps {
   projectId: string;
   projectName: string;
@@ -33,9 +39,11 @@ export default function CreateDebitVoucherForm({
   const [error, setError] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [expenseCategories, setExpenseCategories] = useState<ExpenseCategory[]>([]);
 
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
+    expenseCategoryId: '',
     workDetails: '',
     purpose: '',
     paidBy: '',
@@ -48,10 +56,10 @@ export default function CreateDebitVoucherForm({
   });
 
   useEffect(() => {
-    fetch('/api/chart-of-accounts?active=true')
+    fetch('/api/expense-categories?active=true')
       .then((res) => res.json())
       .then((data) => {
-        if (data.ok) setAccounts(data.data || []);
+        if (data.ok) setExpenseCategories(data.data || []);
       });
     fetch('/api/payment-methods?active=true')
       .then((res) => res.json())
@@ -59,6 +67,28 @@ export default function CreateDebitVoucherForm({
         if (data.ok) setPaymentMethods(data.data || []);
       });
   }, []);
+
+  // Fetch expense accounts when category is selected
+  useEffect(() => {
+    if (formData.expenseCategoryId) {
+      fetch(`/api/chart-of-accounts?active=true&type=EXPENSE&expenseCategoryId=${formData.expenseCategoryId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.ok) setAccounts(data.data || []);
+        });
+    } else {
+      // If no category selected, clear accounts
+      setAccounts([]);
+    }
+  }, [formData.expenseCategoryId]);
+
+  const handleCategoryChange = (expenseCategoryId: string) => {
+    setFormData((prev) => ({ 
+      ...prev, 
+      expenseCategoryId, 
+      debitAccountId: '' // Clear account selection when category changes
+    }));
+  };
 
   const handlePaymentMethodChange = (paymentMethodId: string) => {
     setFormData((prev) => ({ ...prev, paymentMethodId, creditAccountId: '' }));
@@ -79,6 +109,10 @@ export default function CreateDebitVoucherForm({
     const amount = parseFloat(formData.amount);
     if (isNaN(amount) || amount <= 0) {
       setError('Amount must be a positive number');
+      return;
+    }
+    if (!formData.expenseCategoryId) {
+      setError('Expense category is required');
       return;
     }
     if (!formData.debitAccountId) {
@@ -106,6 +140,7 @@ export default function CreateDebitVoucherForm({
             projectId,
             isCompanyLevel: false,
             paymentMethodId: formData.paymentMethodId || null,
+            expenseCategoryId: formData.expenseCategoryId || null,
             workDetails: formData.workDetails || null,
             paidBy: formData.paidBy || null,
             receivedBy: formData.receivedBy || null,
@@ -197,6 +232,25 @@ export default function CreateDebitVoucherForm({
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
+            Expense Category <span className="text-red-500">*</span>
+          </label>
+          <select
+            required
+            value={formData.expenseCategoryId}
+            onChange={(e) => handleCategoryChange(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+          >
+            <option value="">Select category</option>
+            {expenseCategories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Expense Account (Purpose) <span className="text-red-500">*</span>
           </label>
           <select
@@ -204,8 +258,11 @@ export default function CreateDebitVoucherForm({
             value={formData.debitAccountId}
             onChange={(e) => setFormData({ ...formData, debitAccountId: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            disabled={!formData.expenseCategoryId}
           >
-            <option value="">Select account</option>
+            <option value="">
+              {formData.expenseCategoryId ? 'Select account' : 'Select category first'}
+            </option>
             {accounts.map((acc) => (
               <option key={acc.id} value={acc.id}>
                 {acc.code} - {acc.name}
@@ -250,7 +307,7 @@ export default function CreateDebitVoucherForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Work Details</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Work / Material Details</label>
           <input
             type="text"
             value={formData.workDetails}

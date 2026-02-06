@@ -107,15 +107,22 @@ export async function GET(
     const lines = await prisma.voucherLine.findMany({
       where,
       include: {
+        expenseCategory: {
+          select: { id: true, name: true },
+        },
       },
     });
 
-    // Calculate voucher-based costs (legacy, for backward compatibility)
-    // All voucher costs are categorized as 'OTHERS' since cost heads are removed
+    // Aggregate voucher-based costs by expenseCategoryId
+    // Lines with null expenseCategoryId will be grouped under "Uncategorized"
     const voucherCategoryTotals = new Map<string, number>();
     lines.forEach((line) => {
       const costAmount = Number(line.debit) - Number(line.credit);
-      voucherCategoryTotals.set('OTHERS', (voucherCategoryTotals.get('OTHERS') || 0) + costAmount);
+      if (costAmount > 0) {
+        // Use category ID if available, otherwise use "uncategorized" key
+        const categoryKey = line.expenseCategoryId || 'uncategorized';
+        voucherCategoryTotals.set(categoryKey, (voucherCategoryTotals.get(categoryKey) || 0) + costAmount);
+      }
     });
 
     // Get expenses for this MAIN project and aggregate by dynamic category
@@ -169,7 +176,7 @@ export async function GET(
       }
     }
 
-    // Get all expense categories for this company (active + any used in expenses)
+    // Get all expense categories for this company (active + any used in expenses or voucherLines)
     const allCategories = await prisma.expenseCategory.findMany({
       where: {
         companyId: auth.companyId,
@@ -180,6 +187,26 @@ export async function GET(
               some: {
                 companyId: auth.companyId,
                 mainProjectId: params.id,
+              },
+            },
+          },
+          {
+            voucherLines: {
+              some: {
+                companyId: auth.companyId,
+                OR: [
+                  { projectId: params.id },
+                  {
+                    AND: [
+                      { projectId: null },
+                      { voucher: { projectId: params.id } },
+                    ],
+                  },
+                ],
+                debit: { gt: 0 },
+                account: {
+                  type: 'EXPENSE',
+                },
               },
             },
           },
@@ -205,31 +232,47 @@ export async function GET(
       }
     });
 
-    // Combine voucher-based totals (legacy) with expense totals
-    // For now, we'll prioritize expense totals and show categories from ExpenseCategory table
-    const summaryByCategory = allCategories.map((category) => {
-      const expenseAmount = expenseCategoryTotals.get(category.id) || 0;
-      // Add voucher-based amount if category name matches (legacy support)
-      const voucherAmount = voucherCategoryTotals.get(category.name.toUpperCase().replace(/\s+/g, '_')) || 0;
-      const totalAmount = expenseAmount + voucherAmount;
-
-      return {
-        key: category.id,
-        name: category.name,
-        amount: totalAmount,
-      };
+    // Build a map of category names for quick lookup
+    const categoryMap = new Map<string, string>();
+    allCategories.forEach((cat) => {
+      categoryMap.set(cat.id, cat.name);
     });
 
-    // Also include categories that have voucher totals but no expense category (legacy)
-    voucherCategoryTotals.forEach((amount, categoryName) => {
-      const categoryKey = categoryName.toUpperCase().replace(/\s+/g, '_');
-      const exists = summaryByCategory.some((cat) => 
-        cat.name.toUpperCase().replace(/\s+/g, '_') === categoryKey
-      );
-      if (!exists && amount > 0) {
+    // Combine voucher-based totals with expense totals by categoryId
+    const combinedTotals = new Map<string, number>();
+    
+    // Add expense totals
+    expenseCategoryTotals.forEach((amount, categoryId) => {
+      combinedTotals.set(categoryId, amount);
+    });
+    
+    // Add voucher totals (by categoryId)
+    voucherCategoryTotals.forEach((amount, categoryId) => {
+      if (categoryId === 'uncategorized') {
+        // Handle uncategorized separately
+        combinedTotals.set('uncategorized', (combinedTotals.get('uncategorized') || 0) + amount);
+      } else {
+        // Merge with existing totals for this category
+        combinedTotals.set(categoryId, (combinedTotals.get(categoryId) || 0) + amount);
+      }
+    });
+
+    // Build summary array from combined totals
+    const summaryByCategory: Array<{ key: string; name: string; amount: number }> = [];
+    
+    // Add categorized entries
+    combinedTotals.forEach((amount, categoryId) => {
+      if (categoryId === 'uncategorized') {
         summaryByCategory.push({
-          key: categoryKey,
-          name: categoryName.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
+          key: 'uncategorized',
+          name: 'Uncategorized',
+          amount,
+        });
+      } else {
+        const categoryName = categoryMap.get(categoryId) || 'Unknown Category';
+        summaryByCategory.push({
+          key: categoryId,
+          name: categoryName,
           amount,
         });
       }

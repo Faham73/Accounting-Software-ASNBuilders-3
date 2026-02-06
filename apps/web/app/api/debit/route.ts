@@ -166,7 +166,17 @@ export async function GET(request: NextRequest) {
           { voucher: { date: 'asc' } },
           { createdAt: 'asc' },
         ],
-        include: {
+        select: {
+          id: true,
+          description: true,
+          debit: true,
+          credit: true,
+          projectId: true,
+          isCompanyLevel: true,
+          vendorId: true,
+          paymentMethodId: true,
+          expenseCategoryId: true,
+          createdAt: true,
           voucher: {
             select: {
               id: true,
@@ -184,6 +194,9 @@ export async function GET(request: NextRequest) {
             select: { id: true, name: true },
           },
           paymentMethod: {
+            select: { id: true, name: true },
+          },
+          expenseCategory: {
             select: { id: true, name: true },
           },
         },

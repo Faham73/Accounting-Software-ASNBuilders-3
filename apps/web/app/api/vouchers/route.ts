@@ -230,6 +230,7 @@ export async function POST(request: NextRequest) {
                 isCompanyLevel: validatedData.expenseType === 'OFFICE_EXPENSE' ? false : (line.isCompanyLevel || false),
                 vendorId: line.vendorId || null,
                 paymentMethodId: line.paymentMethodId || null,
+                expenseCategoryId: line.expenseCategoryId || null, // Only stored on debit lines (debit > 0)
                 // PDF fields
                 workDetails: line.workDetails || null,
                 paidBy: line.paidBy || null,
@@ -251,6 +252,9 @@ export async function POST(request: NextRequest) {
             include: {
               account: {
                 select: { id: true, code: true, name: true },
+              },
+              expenseCategory: {
+                select: { id: true, name: true },
               },
             },
           },

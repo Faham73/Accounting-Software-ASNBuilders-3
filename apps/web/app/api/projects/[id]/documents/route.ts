@@ -119,6 +119,18 @@ export async function POST(
       );
     }
 
+    // File uploads to local filesystem are not supported in production (Vercel serverless)
+    // TODO: Implement cloud storage (S3, Vercel Blob, etc.) for production
+    if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: 'File uploads are not available in production. Please configure cloud storage.',
+        },
+        { status: 503 }
+      );
+    }
+
     const timestamp = Date.now();
     const randomStr = Math.random().toString(36).substring(2, 15);
     const ext = file.name.split('.').pop() || 'bin';

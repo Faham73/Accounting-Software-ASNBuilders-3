@@ -17,6 +17,7 @@ export const VoucherLineCreateSchema = z.object({
   isCompanyLevel: z.boolean().optional().default(false),
   vendorId: z.string().optional().nullable(),
   paymentMethodId: z.string().optional().nullable(),
+  expenseCategoryId: z.string().uuid().optional().nullable(),
   // PDF fields
   workDetails: z.string().optional().nullable(),
   paidBy: z.string().optional().nullable(),
@@ -113,6 +114,7 @@ export const VoucherLineUpdateSchema = z.object({
   isCompanyLevel: z.boolean().optional(),
   vendorId: z.string().optional().nullable(),
   paymentMethodId: z.string().optional().nullable(),
+  expenseCategoryId: z.string().uuid().optional().nullable(),
   // PDF fields
   workDetails: z.string().optional().nullable(),
   paidBy: z.string().optional().nullable(),

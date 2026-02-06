@@ -86,6 +86,10 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Ensure default expense categories exist for the new company
+    const { ensureDefaultExpenseCategories } = await import('@/lib/expenseCategoriesDefaults.server');
+    await ensureDefaultExpenseCategories(company.id);
+
     return NextResponse.json(
       {
         ok: true,
