@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, FormEvent, Suspense } from 'react';
+import { useState, useEffect, FormEvent, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -13,19 +13,50 @@ function LoginForm() {
   const searchParams = useSearchParams();
 
   // If bootstrap not yet done, redirect to setup
+  // Optimized: Only run once on mount to prevent blocking UI updates
   useEffect(() => {
-    fetch('/api/auth/bootstrap')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.ok && data.data?.allowed === true) {
-          const redirect = searchParams.get('redirect');
-          router.replace(redirect ? `/setup?redirect=${encodeURIComponent(redirect)}` : '/setup');
-        }
-      })
-      .catch(() => {});
-  }, [router, searchParams]);
+    let mounted = true;
+    const abortController = new AbortController();
+    
+    // Defer the check to avoid blocking initial render
+    const timeoutId = setTimeout(() => {
+      if (!mounted) return;
+      
+      fetch('/api/auth/bootstrap', { signal: abortController.signal })
+        .then((res) => res.json())
+        .then((data) => {
+          if (!mounted) return;
+          if (data.ok && data.data?.allowed === true) {
+            const redirect = searchParams.get('redirect');
+            router.replace(redirect ? `/setup?redirect=${encodeURIComponent(redirect)}` : '/setup');
+          }
+        })
+        .catch((err) => {
+          // Ignore abort errors and network errors
+          if (err.name !== 'AbortError' && mounted) {
+            console.error('Bootstrap check failed:', err);
+          }
+        });
+    }, 0);
+    
+    return () => {
+      mounted = false;
+      clearTimeout(timeoutId);
+      abortController.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount - searchParams accessed inside callback
 
-  const handleSubmit = async (e: FormEvent) => {
+  // Memoize handlers to prevent unnecessary re-renders
+  const handleEmailChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
+  }, []);
+
+  const handlePasswordChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value);
+  }, []);
+
+  const handleSubmit = useCallback(async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
@@ -54,7 +85,7 @@ function LoginForm() {
       setError('An error occurred. Please try again.');
       setIsLoading(false);
     }
-  };
+  }, [email, password, router, searchParams]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -77,7 +108,7 @@ function LoginForm() {
                 autoComplete="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={handleEmailChange}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 placeholder="you@example.com"
                 disabled={isLoading}
@@ -94,7 +125,7 @@ function LoginForm() {
                 autoComplete="current-password"
                 required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={handlePasswordChange}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Enter your password"
                 disabled={isLoading}
