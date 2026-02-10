@@ -10,6 +10,9 @@ import { ZodError } from 'zod';
 import { z } from 'zod';
 import { getCompanyTotals } from '@/lib/projects/projectTotals.server';
 
+// Prevent this route from being run at build time (no auth during build)
+export const dynamic = 'force-dynamic';
+
 const VoucherStatusFilterSchema = z.enum(['ALL', 'DRAFT', 'SUBMITTED', 'APPROVED', 'POSTED']);
 
 // Helper to safely coerce date, treating empty strings as undefined
