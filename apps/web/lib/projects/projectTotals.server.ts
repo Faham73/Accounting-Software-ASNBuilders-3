@@ -54,17 +54,17 @@ export async function getProjectTotals(
     throw new Error('Project not found or does not belong to company');
   }
 
-  // Build purchase where clause: for sub-projects, also filter by subProjectId
-  const purchaseWhere: any = {
+  // Build purchase where clause: for sub-projects, also filter by subProjectId.
+  // projectId must be a string (Prisma does not accept null in Purchase where).
+  const purchaseWhere: Prisma.PurchaseWhereInput = {
     companyId,
   };
-  
   if (project.isMain) {
-    // Main project: count all purchases where projectId = main project
     purchaseWhere.projectId = projectId;
   } else {
-    // Sub-project: count purchases where projectId = parent AND subProjectId = current sub-project
-    purchaseWhere.projectId = project.parentProjectId;
+    if (project.parentProjectId != null) {
+      purchaseWhere.projectId = project.parentProjectId;
+    }
     purchaseWhere.subProjectId = projectId;
   }
 

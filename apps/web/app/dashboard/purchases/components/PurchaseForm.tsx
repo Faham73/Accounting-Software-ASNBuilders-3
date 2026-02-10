@@ -429,6 +429,7 @@ export default function PurchaseForm({ purchase }: PurchaseFormProps) {
     setIsSubmitting(true);
 
     try {
+      const paidNum = parseFloat(formData.paidAmount) || 0;
       const payload = {
         date: formData.date,
         challanNo: formData.challanNo || null,
@@ -437,7 +438,8 @@ export default function PurchaseForm({ purchase }: PurchaseFormProps) {
         supplierVendorId: formData.supplierVendorId,
         reference: formData.reference || null,
         discountPercent: formData.discountPercent ? parseFloat(formData.discountPercent) : null,
-        paidAmount: parseFloat(formData.paidAmount) || 0,
+        paidAmount: paidNum,
+        paymentMethod: paidNum > 0 ? (formData.paymentMethod || null) : null,
         paymentAccountId: formData.paymentAccountId || null,
         lines: lines.map((line) => ({
           lineType: 'MATERIAL', // Always MATERIAL for new form
@@ -851,8 +853,9 @@ export default function PurchaseForm({ purchase }: PurchaseFormProps) {
               role="dialog"
               aria-modal="true"
               aria-labelledby="add-vendor-title"
+              aria-label="Add New Vendor"
             >
-            <h2 id="add-vendor-title" className="text-xl font-bold mb-4">Add New Vendor</h2>
+              <h2 id="add-vendor-title" className="text-xl font-bold mb-4">Add New Vendor</h2>
             <form
               onSubmit={async (e) => {
                 e.preventDefault();

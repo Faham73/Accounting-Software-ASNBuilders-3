@@ -136,14 +136,15 @@ export default function ProjectForm({ project, onDuplicate }: ProjectFormProps) 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="rounded-md bg-red-50 p-4">
-          <p className="text-sm text-red-800">{error}</p>
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 shadow-sm">
+          <p className="text-sm font-medium text-red-800">{error}</p>
         </div>
       )}
 
+      <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-6 shadow-sm">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="name" className="block text-sm font-semibold text-gray-800">
             Project Name <span className="text-red-500">*</span>
           </label>
           <input
@@ -152,20 +153,20 @@ export default function ProjectForm({ project, onDuplicate }: ProjectFormProps) 
             required
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="mt-1 block w-full min-h-[42px] rounded-lg border-2 border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
             autoFocus
           />
         </div>
 
         <div>
-          <label htmlFor="status" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="status" className="block text-sm font-semibold text-gray-800">
             Status
           </label>
           <select
             id="status"
             value={formData.status}
             onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="mt-1 block w-full min-h-[42px] rounded-lg border-2 border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
           >
             <option value="DRAFT">Draft</option>
             <option value="RUNNING">Running</option>
@@ -175,7 +176,7 @@ export default function ProjectForm({ project, onDuplicate }: ProjectFormProps) 
         </div>
 
         <div>
-          <label htmlFor="clientName" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="clientName" className="block text-sm font-semibold text-gray-800">
             Client Name
           </label>
           <input
@@ -183,12 +184,12 @@ export default function ProjectForm({ project, onDuplicate }: ProjectFormProps) 
             id="clientName"
             value={formData.clientName}
             onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="mt-1 block w-full min-h-[42px] rounded-lg border-2 border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
           />
         </div>
 
         <div>
-          <label htmlFor="clientContact" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="clientContact" className="block text-sm font-semibold text-gray-800">
             Client Contact
           </label>
           <input
@@ -196,12 +197,12 @@ export default function ProjectForm({ project, onDuplicate }: ProjectFormProps) 
             id="clientContact"
             value={formData.clientContact}
             onChange={(e) => setFormData({ ...formData, clientContact: e.target.value })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="mt-1 block w-full min-h-[42px] rounded-lg border-2 border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
           />
         </div>
 
         <div>
-          <label htmlFor="siteLocation" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="siteLocation" className="block text-sm font-semibold text-gray-800">
             Site Location
           </label>
           <input
@@ -209,12 +210,12 @@ export default function ProjectForm({ project, onDuplicate }: ProjectFormProps) 
             id="siteLocation"
             value={formData.siteLocation}
             onChange={(e) => setFormData({ ...formData, siteLocation: e.target.value })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="mt-1 block w-full min-h-[42px] rounded-lg border-2 border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
           />
         </div>
 
         <div>
-          <label htmlFor="assignedManager" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="assignedManager" className="block text-sm font-semibold text-gray-800">
             Assigned Manager
           </label>
           <input
@@ -222,12 +223,12 @@ export default function ProjectForm({ project, onDuplicate }: ProjectFormProps) 
             id="assignedManager"
             value={formData.assignedManager}
             onChange={(e) => setFormData({ ...formData, assignedManager: e.target.value })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="mt-1 block w-full min-h-[42px] rounded-lg border-2 border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
           />
         </div>
 
         <div>
-          <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="startDate" className="block text-sm font-semibold text-gray-800">
             Start Date
           </label>
           <input
@@ -235,12 +236,12 @@ export default function ProjectForm({ project, onDuplicate }: ProjectFormProps) 
             id="startDate"
             value={formData.startDate}
             onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="mt-1 block w-full min-h-[42px] rounded-lg border-2 border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
           />
         </div>
 
         <div>
-          <label htmlFor="expectedEndDate" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="expectedEndDate" className="block text-sm font-semibold text-gray-800">
             Expected End Date
           </label>
           <input
@@ -248,12 +249,12 @@ export default function ProjectForm({ project, onDuplicate }: ProjectFormProps) 
             id="expectedEndDate"
             value={formData.expectedEndDate}
             onChange={(e) => setFormData({ ...formData, expectedEndDate: e.target.value })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="mt-1 block w-full min-h-[42px] rounded-lg border-2 border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
           />
         </div>
 
         <div>
-          <label htmlFor="contractValue" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="contractValue" className="block text-sm font-semibold text-gray-800">
             Contract Value
           </label>
           <input
@@ -263,12 +264,12 @@ export default function ProjectForm({ project, onDuplicate }: ProjectFormProps) 
             min="0"
             value={formData.contractValue}
             onChange={(e) => setFormData({ ...formData, contractValue: e.target.value })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="mt-1 block w-full min-h-[42px] rounded-lg border-2 border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
           />
         </div>
 
         <div>
-          <label htmlFor="budgetTotal" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="budgetTotal" className="block text-sm font-semibold text-gray-800">
             Project Budget (BDT)
           </label>
           <input
@@ -278,12 +279,12 @@ export default function ProjectForm({ project, onDuplicate }: ProjectFormProps) 
             min="0"
             value={formData.budgetTotal}
             onChange={(e) => setFormData({ ...formData, budgetTotal: e.target.value })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="mt-1 block w-full min-h-[42px] rounded-lg border-2 border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
           />
         </div>
 
         <div>
-          <label htmlFor="address" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="address" className="block text-sm font-semibold text-gray-800">
             Project Address
           </label>
           <input
@@ -291,12 +292,12 @@ export default function ProjectForm({ project, onDuplicate }: ProjectFormProps) 
             id="address"
             value={formData.address}
             onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="mt-1 block w-full min-h-[42px] rounded-lg border-2 border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
           />
         </div>
 
         <div>
-          <label htmlFor="projectManager" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="projectManager" className="block text-sm font-semibold text-gray-800">
             Project Manager
           </label>
           <input
@@ -304,12 +305,12 @@ export default function ProjectForm({ project, onDuplicate }: ProjectFormProps) 
             id="projectManager"
             value={formData.projectManager}
             onChange={(e) => setFormData({ ...formData, projectManager: e.target.value })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="mt-1 block w-full min-h-[42px] rounded-lg border-2 border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
           />
         </div>
 
         <div>
-          <label htmlFor="projectEngineer" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="projectEngineer" className="block text-sm font-semibold text-gray-800">
             Project Engineer
           </label>
           <input
@@ -317,12 +318,12 @@ export default function ProjectForm({ project, onDuplicate }: ProjectFormProps) 
             id="projectEngineer"
             value={formData.projectEngineer}
             onChange={(e) => setFormData({ ...formData, projectEngineer: e.target.value })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="mt-1 block w-full min-h-[42px] rounded-lg border-2 border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
           />
         </div>
 
         <div>
-          <label htmlFor="companySiteName" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="companySiteName" className="block text-sm font-semibold text-gray-800">
             Company Site Name
           </label>
           <input
@@ -330,12 +331,12 @@ export default function ProjectForm({ project, onDuplicate }: ProjectFormProps) 
             id="companySiteName"
             value={formData.companySiteName}
             onChange={(e) => setFormData({ ...formData, companySiteName: e.target.value })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="mt-1 block w-full min-h-[42px] rounded-lg border-2 border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
           />
         </div>
 
         <div>
-          <label htmlFor="reference" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="reference" className="block text-sm font-semibold text-gray-800">
             Reference
           </label>
           <input
@@ -343,7 +344,7 @@ export default function ProjectForm({ project, onDuplicate }: ProjectFormProps) 
             id="reference"
             value={formData.reference}
             onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="mt-1 block w-full min-h-[42px] rounded-lg border-2 border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
           />
         </div>
 
@@ -369,14 +370,14 @@ export default function ProjectForm({ project, onDuplicate }: ProjectFormProps) 
 
         {!formData.isMain && (
           <div>
-            <label htmlFor="parentProjectId" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="parentProjectId" className="block text-sm font-semibold text-gray-800">
               Parent Project
             </label>
             <select
               id="parentProjectId"
               value={formData.parentProjectId}
               onChange={(e) => setFormData({ ...formData, parentProjectId: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              className="mt-1 block w-full min-h-[42px] rounded-lg border-2 border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
             >
               <option value="">Select a main project...</option>
               {mainProjects.map((mainProject) => (
@@ -400,6 +401,7 @@ export default function ProjectForm({ project, onDuplicate }: ProjectFormProps) 
             Active
           </label>
         </div>
+      </div>
       </div>
 
       {/* Attachments section - only show on edit page */}

@@ -29,7 +29,7 @@ export default function DashboardLayoutClient({
   }, [pathname]);
 
   return (
-    <div className="min-h-screen w-full flex bg-gray-50 overflow-x-hidden">
+    <div className="h-screen w-full flex bg-gray-50 overflow-hidden">
       {/* Mobile hamburger - fixed in header */}
       <header className="fixed top-0 left-0 right-0 h-14 bg-white/95 backdrop-blur border-b border-gray-200 z-30 flex items-center px-3 sm:px-6 md:hidden">
         <button
